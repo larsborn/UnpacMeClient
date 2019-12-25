@@ -292,6 +292,9 @@ if __name__ == '__main__':
 
     quota_parser = subparsers.add_parser('quota', help='Print current quota stats.')
 
+    search_parser = subparsers.add_parser('search', help='Searches SHA256 hash.')
+    search_parser.add_argument('sha256')
+
     download_parser = subparsers.add_parser('download', help='Download file by SHA256 hash.')
     download_parser.add_argument('sha256')
     download_parser.add_argument('--file-name', help='Specify file name, will use SHA256 as file name if not specified')
@@ -453,6 +456,17 @@ if __name__ == '__main__':
             logger.debug(F'Downloading "{file_name}"...')
             with open(file_name, 'wb') as fp:
                 fp.write(api.download(sha256))
+
+        elif args.command == 'search':
+            sha256 = Sha256(args.sha256.strip())
+            for entry in api.search_hash(sha256):
+                print(F'SHA256: {entry.sha256.hash}')
+                print(F'Submission-ID: {entry.upload.id}')
+                print(F'Created at: {entry.created.strftime("%Y-%m-%d %H:%M:%S")}')
+                print('')
+                print('Unpacked Files')
+                for child in entry.children:
+                    print(child.hash)
 
         elif args.command == 'feed':
             for entry in api.public_feed():
