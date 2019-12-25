@@ -101,12 +101,12 @@ class Sha256:
 
 
 class UnpacMeUpload:
-    def __init__(self, id, status: UnpacMeStatus):
+    def __init__(self, id, status: UnpacMeStatus, created: datetime.datetime, parent_sha256: Sha256):
         self.id = id
         self.status = status
 
     def __repr__(self):
-        return F'<UnpacMeUploadResponse {self.id} {self.status}>'
+        return F'<UnpacMeUpload {self.id} {self.status} {self.created.strftime("%Y-%m-%d %H:%M:%S")}>'
 
 
 class UnpacMeQuota:
@@ -205,7 +205,12 @@ class UnpacMeApi:
         response = self.session.post(F'{self.BASE_URL}/private/upload', files={'file': data})
         if response.status_code != 200:
             raise ApiException(F'Api-Exception: {response.content}')
-        return UnpacMeUpload(response.json()['id'], UnpacMeStatus.UNKNOWN)
+        return UnpacMeUpload(
+            response.json()['id'],
+            UnpacMeStatus.UNKNOWN,
+            datetime.datetime.now(),
+            Sha256.from_data(data)
+        )
 
     def status(self, upload: UnpacMeUpload) -> UnpacMeStatus:
         response = self.session.get(F'{self.BASE_URL}/public/status/{upload.id}')
@@ -235,10 +240,13 @@ class UnpacMeApi:
             if response.status_code == 400:
                 if 'description' in j.keys() and 'error' in j.keys():
                     raise UnpacMeApiException(j['error'], j['description'])
-            yield from (
-                UnpacMeUpload(result['id'], UnpacMeStatus.from_string(result['status']))
-                for result in j['results']
-            )
+
+            yield from (UnpacMeUpload(
+                result['id'],
+                UnpacMeStatus.from_string(result['status']),
+                datetime.datetime.utcfromtimestamp(result['created']),
+                Sha256(result['sha256'])
+            ) for result in j['results'])
             cursor = j['cursor']
 
     def search_hash(self, sha256: Sha256):
@@ -446,7 +454,11 @@ if __name__ == '__main__':
 
         elif args.command == 'history':
             for upload in api.history():
-                print(F'{upload.id} ({upload.status})')
+                print(
+                    F'{upload.created.strftime("%Y-%m-%d %H:%M:%S")} '
+                    F'{upload.id} {upload.parent_sha256.hash} '
+                    F'({upload.status})'
+                )
 
         elif args.command == 'download':
             sha256 = Sha256(args.sha256.strip())
