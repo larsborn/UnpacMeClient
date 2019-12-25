@@ -375,7 +375,7 @@ if __name__ == '__main__':
                         file_data = fp.read()
 
                     try:
-                        api.search_hash(Sha256.from_data(file_data))
+                        next(api.search_hash(Sha256.from_data(file_data)))
                         logger.error(F'Hash of "{file_name}" already exists, skipping.')
                         hash_already_uploaded = True
                     except HashNotFoundApiException:
