@@ -420,7 +420,7 @@ if __name__ == '__main__':
             )
 
         elif args.command == 'status':
-            upload = UnpacMeUpload(args.upload_id, UnpacMeStatus.UNKNOWN)
+            upload = UnpacMeUpload(args.upload_id, UnpacMeStatus.UNKNOWN, datetime.datetime.now())
             status = api.status(upload)
             if status == UnpacMeStatus.COMPLETE:
                 logger.info('Task completed')
