@@ -104,6 +104,8 @@ class UnpacMeUpload:
     def __init__(self, id, status: UnpacMeStatus, created: datetime.datetime, parent_sha256: Sha256):
         self.id = id
         self.status = status
+        self.created = created
+        self.parent_sha256 = parent_sha256
 
     def __repr__(self):
         return F'<UnpacMeUpload {self.id} {self.status} {self.created.strftime("%Y-%m-%d %H:%M:%S")}>'
@@ -256,7 +258,20 @@ class UnpacMeApi:
         j = response.json()
         if response.status_code == 404 and 'description' in j.keys():
             raise HashNotFoundApiException(j['description'])
-        return j
+
+        for result in j['results']:
+            yield FeedEntry(
+                UnpacMeUpload(
+                    result['submission_id'],
+                    UnpacMeStatus.from_string(result['status']),
+                    datetime.datetime.utcfromtimestamp(result['created']),
+                    Sha256(result['sha256'])
+                ),
+                Sha256(result['sha256']),
+                [],
+                datetime.datetime.utcfromtimestamp(result['created']),
+                [Sha256(sha256) for sha256 in result['children']]
+            )
 
     def get_quota(self) -> UnpacMeQuota:
         response = self.session.get(F'{self.BASE_URL}/private/user/access')
