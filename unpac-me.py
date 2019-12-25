@@ -161,13 +161,15 @@ class FeedEntry:
             sha256: Sha256,
             malware_tags: typing.List[str],
             created: datetime.datetime,
-            children: int
+            children: typing.List[Sha256],
+            child_count: int = None
     ):
         self.upload = upload
         self.sha256 = sha256
         self.malware_tags = malware_tags
         self.created = created
         self.children = children
+        self.child_count = child_count
 
     def __repr__(self):
         return F'<PublicFeedEntry ' \
@@ -287,6 +289,7 @@ class UnpacMeApi:
                 Sha256(result['sha256']),
                 [malware['match'] for malware in result['malwareid']],
                 datetime.datetime.utcfromtimestamp(result['created']),
+                [Sha256(sha256) for sha256 in result['children']] if isinstance(result['children'], list) else [],
                 result['children']
             )
 
