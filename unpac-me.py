@@ -390,7 +390,7 @@ if __name__ == '__main__':
                     continue
 
                 while True:
-                    logger.debug(F'Pooling Status of Upload ID: {upload.id}')
+                    logger.debug(F'polling status of submission id "{upload.id}"...')
                     status = api.status(upload)
                     if status == UnpacMeStatus.COMPLETE:
                         break
