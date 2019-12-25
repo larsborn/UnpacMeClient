@@ -85,6 +85,8 @@ class UnpacMeStatus(Enum):
 
 class Sha256:
     def __init__(self, sha256):
+        if len(sha256) != 64:
+            raise Exception(F'Invalid SHA256 hash: "{repr(sha256)}"')
         self.hash = sha256
 
     @staticmethod
