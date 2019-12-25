@@ -154,7 +154,7 @@ class UnpacMeResults:
         return F'<UnpacMeResults status={self.status}>'
 
 
-class PublicFeedEntry:
+class FeedEntry:
     def __init__(
             self,
             upload: UnpacMeUpload,
@@ -249,7 +249,7 @@ class UnpacMeApi:
             ) for result in j['results'])
             cursor = j['cursor']
 
-    def search_hash(self, sha256: Sha256):
+    def search_hash(self, sha256: Sha256) -> typing.Iterator[FeedEntry]:
         response = self.session.get(F'{self.BASE_URL}/private/search/hash/{sha256.hash}')
         j = response.json()
         if response.status_code == 404 and 'description' in j.keys():
@@ -270,15 +270,20 @@ class UnpacMeApi:
             j['roles'],
         )
 
-    def public_feed(self) -> typing.Iterator[PublicFeedEntry]:
+    def public_feed(self) -> typing.Iterator[FeedEntry]:
         response = self.session.get(F'{self.BASE_URL}/public/feed')
         if response.status_code != 200:
             raise ApiException(F'Api-Exception: {response.content}')
 
         j = response.json()
         for result in j['results']:
-            yield PublicFeedEntry(
-                UnpacMeUpload(result['id'], UnpacMeStatus.from_string(result['status'])),
+            yield FeedEntry(
+                UnpacMeUpload(
+                    result['id'],
+                    UnpacMeStatus.from_string(result['status']),
+                    datetime.datetime.utcfromtimestamp(result['created']),
+                    result['sha256']
+                ),
                 Sha256(result['sha256']),
                 [malware['match'] for malware in result['malwareid']],
                 datetime.datetime.utcfromtimestamp(result['created']),
