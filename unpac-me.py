@@ -101,7 +101,7 @@ class Sha256:
 
 
 class UnpacMeUpload:
-    def __init__(self, id, status: UnpacMeStatus, created: datetime.datetime, parent_sha256: Sha256):
+    def __init__(self, id, status: UnpacMeStatus, created: datetime.datetime, parent_sha256: typing.Optional[Sha256]):
         self.id = id
         self.status = status
         self.created = created
@@ -443,7 +443,7 @@ if __name__ == '__main__':
             )
 
         elif args.command == 'status':
-            upload = UnpacMeUpload(args.upload_id, UnpacMeStatus.UNKNOWN, datetime.datetime.now())
+            upload = UnpacMeUpload(args.upload_id, UnpacMeStatus.UNKNOWN, datetime.datetime.now(), None)
             status = api.status(upload)
             if status == UnpacMeStatus.COMPLETE:
                 logger.info('Task completed')
