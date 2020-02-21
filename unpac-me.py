@@ -133,16 +133,22 @@ class UnpacMeUnpackedSample:
     def __init__(self, sha256: Sha256, malware_names: typing.List):
         self.sha256 = sha256
         self.malware_names = malware_names
+        self.autoit_original_file_name = None
+        self.autoit_sha256 = None
 
     def __repr__(self):
         return F'<UnpacMeUnpackedSample {self.sha256} {self.malware_names}>'
 
     @staticmethod
     def from_result(result):
-        return UnpacMeUnpackedSample(
+        unpacked_sample = UnpacMeUnpackedSample(
             Sha256(result['hashes']['sha256'] if 'hashes' in result.keys() else result['sha256']),
             list(malware['name'] for malware in result['malware_id']) if 'malware_id' in result.keys() else [],
         )
+        if 'autoit' in result.keys():
+            unpacked_sample.autoit_original_file_name = result['autoit']['metadata_original_name']
+            unpacked_sample.autoit_sha256 = Sha256(result['autoit']['sha256'])
+        return unpacked_sample
 
 
 class UnpacMeResults:
@@ -459,19 +465,26 @@ if __name__ == '__main__':
                         line = F'{sample.sha256.hash}'
                         if sample.malware_names:
                             line += F' ({", ".join(sample.malware_names)})'
+                        if sample.autoit_sha256:
+                            line += F' [{sample.autoit_original_file_name}, {sample.autoit_sha256.hash}]'
                         print(line)
                 if args.download_unpacked_files:
+
+                    def download_to_file(sha256: Sha256, file_name: str):
+                        if os.path.exists(file_name):
+                            logger.warning(F'Skipping "{file_name}" because file already exists')
+                            return
+                        logger.debug(F'Downloading "{file_name}"...')
+                        with open(file_name, 'wb') as fp:
+                            fp.write(api.download(sha256))
+
+
                     original_sha256 = results.sha256
-                    for result in results.samples:
-                        if result.sha256 == original_sha256:
-                            continue
-                        unpacked_file_name = F'{original_sha256.hash}.{result.sha256.hash}'
-                        if os.path.exists(unpacked_file_name):
-                            logger.warning(F'Skipping "{unpacked_file_name}" because file already exists')
-                            continue
-                        logger.debug(F'Downloading "{unpacked_file_name}"...')
-                        with open(unpacked_file_name, 'wb') as fp:
-                            fp.write(api.download(Sha256(result.sha256.hash)))
+                    for sample in results.samples:
+                        if sample.autoit_sha256:
+                            download_to_file(sample.autoit_sha256, F'{original_sha256.hash}.{sample.sha256.hash}._au3')
+                        if sample.sha256 != original_sha256:
+                            download_to_file(sample.sha256, F'{original_sha256.hash}.{sample.sha256.hash}._exe')
             else:
                 logger.info('Task not completed')
 
