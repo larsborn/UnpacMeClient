@@ -362,7 +362,10 @@ if __name__ == '__main__':
     upload_parser = subparsers.add_parser('upload', help='Upload a PE file for unpacking and analysis.')
     upload_parser.add_argument('file_names', nargs='+', help='Files to be uploaded')
     upload_parser.add_argument('-f', '--force', help='Force upload, even if hash already exists.')
-    upload_parser.add_argument('--print-id', help='Do not poll for results but print upload ID and terminate.')
+    upload_parser.add_argument(
+        '--print-id', action='store_true',
+        help='Do not poll for results but print upload ID and terminate.'
+    )
     upload_parser.add_argument('--poll-interval', default=20, help='Number of seconds between polls.')
 
     parser.add_argument(
